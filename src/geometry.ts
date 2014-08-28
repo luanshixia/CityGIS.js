@@ -6,6 +6,9 @@
 module dreambuild.geometry {
     "use strict";
 
+    /*
+     * Utility functions.
+     */
     export class Utils {
 
         static random(min: number, max: number) {
@@ -22,6 +25,9 @@ module dreambuild.geometry {
         }
     }
 
+    /*
+     * Point or vector of 2d or 3d.
+     */
     export class Vector {
 
         x: number;
@@ -70,15 +76,19 @@ module dreambuild.geometry {
             return this.sub(v).mag();
         }
 
-        dot(v) {
+        dot(v: Vector) {
             return this.x * v.x + this.y * v.y + this.z * v.z;
         }
 
-        cross(v) {
+        cross(v: Vector) {
             var x = this.y * v.z - this.z * v.y,
                 y = this.z * v.x - this.x * v.z,
                 z = this.x * v.y - this.y * v.x;
             return new Vector(x, y, z);
+        }
+
+        kross(v: Vector) {
+            return this.x * v.y - this.y * v.x;
         }
 
         normalize() {
@@ -95,6 +105,26 @@ module dreambuild.geometry {
 
         heading() {
             return Math.atan2(this.y, this.x);
+        }
+
+        angleTo(v: Vector, mode = "0ToPi") {
+            var dir0 = this.heading(),
+                dir1 = v.heading(),
+                angle = dir1 - dir0;
+            if (mode === "0To2Pi") {
+                if (angle < 0) {
+                    angle += 2 * Math.PI;
+                }
+                return angle;
+            } else if (mode === "-PiToPi") {
+                if (angle < -Math.PI) {
+                    angle += 2 * Math.PI;
+                } else if (angle > Math.PI) {
+                    angle -= 2 * Math.PI;
+                }
+                return angle;
+            }
+            return Vector.angleBetween(this, v);
         }
 
         rotate(theta: number) {
@@ -118,9 +148,7 @@ module dreambuild.geometry {
         }
 
         static fromString(str: string) {
-            var ns = str.split(",").map(function (s) {
-                return parseFloat(s);
-            });
+            var ns = str.split(",").map(s => parseFloat(s));
             return new Vector(ns[0], ns[1], ns[2]);
         }
 
@@ -163,6 +191,9 @@ module dreambuild.geometry {
         }
     }
 
+    /*
+     * Bounding box of 2d or 3d.
+     */
     export class Extents {
 
         min: Vector;
@@ -238,9 +269,7 @@ module dreambuild.geometry {
 
         isCross(e: Extents) {
             var union = this.add(e);
-            return [0, 1, 2].every(i => {
-                return union.range(i) <= this.range(i) + e.range(i);
-            });
+            return [0, 1, 2].every(i => union.range(i) <= this.range(i) + e.range(i));
         }
 
         static create(minx: number, maxx: number, miny: number, maxy: number, minz = 0, maxz = 0) {
@@ -252,6 +281,9 @@ module dreambuild.geometry {
         }
     }
 
+    /*
+     * Multi points, polyline or polygon.
+     */
     export class PointString {
 
         points: Vector[];
@@ -262,6 +294,72 @@ module dreambuild.geometry {
 
         get(i: number) {
             return this.points[i];
+        }
+
+        extents() {
+            var e = Extents.empty();
+            this.points.forEach(p => {
+                e = e.addPoint(p);
+            });
+            return e;
+        }
+
+        length() {
+            var len = 0, i: number;
+            for (i = 0; i < this.points.length - 1; i++) {
+                len += this.points[i].dist(this.points[i + 1]);
+            }
+            return len;
+        }
+
+        area() {
+            return Math.abs(this.algebraicArea());
+        }
+
+        algebraicArea() {
+            var a = 0, i: number, j: number;
+            for (i = 0; i < this.points.length; i++) {
+                j = (i < this.points.length - 1) ? (i + 1) : 0;
+                a += 0.5 * this.points[i].kross(this.points[j]);
+            }
+            return a;
+        }
+
+        average() {
+            return this.points.reduce((x, y) => x.add(y)).div(this.points.length);
+        }
+
+        centroid() {
+            var a = 0, a1 = 0, c = Vector.zero(), i: number, j: number;
+            if (this.points.length === 1) {
+                return this.points[0].copy();
+            }
+            for (i = 0; i < this.points.length; i++) {
+                j = (i < this.points.length - 1) ? (i + 1) : 0;
+                a1 = 0.5 * this.points[i].kross(this.points[j]);
+                a += a1;
+                c = c.add(this.points[i].add(this.points[j]).div(3).mult(a1));
+            }
+            return c.div(a);
+        }
+
+        lerp(param: number) {
+            var i = Math.floor(param),
+                p1 = this.points[i],
+                p2 = this.points[i + 1];
+            if (!p2) {
+                return p1.copy();
+            }
+            return p1.lerp(p2, param - 1);
+        }
+
+        isPointIn() {
+            var a = 0, i: number, j: number;
+            for (i = 0; i < this.points.length; i++) {
+                j = (i < this.points.length - 1) ? (i + 1) : 0;
+                a += this.points[i].angleTo(this.points[j], "-PiToPi");
+            }
+            return Math.abs(a - 2 * Math.PI) < 0.1;
         }
     }
 }

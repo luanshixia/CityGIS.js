@@ -6,6 +6,9 @@ var dreambuild;
     (function (geometry) {
         "use strict";
 
+        /*
+        * Utility functions.
+        */
         var Utils = (function () {
             function Utils() {
             }
@@ -27,6 +30,9 @@ var dreambuild;
         })();
         geometry.Utils = Utils;
 
+        /*
+        * Point or vector of 2d or 3d.
+        */
         var Vector = (function () {
             function Vector(x, y, z) {
                 if (typeof x === "undefined") { x = 0; }
@@ -81,6 +87,10 @@ var dreambuild;
                 return new Vector(x, y, z);
             };
 
+            Vector.prototype.kross = function (v) {
+                return this.x * v.y - this.y * v.x;
+            };
+
             Vector.prototype.normalize = function () {
                 return this.div(this.mag());
             };
@@ -95,6 +105,25 @@ var dreambuild;
 
             Vector.prototype.heading = function () {
                 return Math.atan2(this.y, this.x);
+            };
+
+            Vector.prototype.angleTo = function (v, mode) {
+                if (typeof mode === "undefined") { mode = "0ToPi"; }
+                var dir0 = this.heading(), dir1 = v.heading(), angle = dir1 - dir0;
+                if (mode === "0To2Pi") {
+                    if (angle < 0) {
+                        angle += 2 * Math.PI;
+                    }
+                    return angle;
+                } else if (mode === "-PiToPi") {
+                    if (angle < -Math.PI) {
+                        angle += 2 * Math.PI;
+                    } else if (angle > Math.PI) {
+                        angle -= 2 * Math.PI;
+                    }
+                    return angle;
+                }
+                return Vector.angleBetween(this, v);
             };
 
             Vector.prototype.rotate = function (theta) {
@@ -159,6 +188,9 @@ var dreambuild;
         })();
         geometry.Vector = Vector;
 
+        /*
+        * Bounding box of 2d or 3d.
+        */
         var Extents = (function () {
             function Extents(min, max) {
                 if (typeof max === "undefined") { max = min; }
@@ -239,12 +271,81 @@ var dreambuild;
         })();
         geometry.Extents = Extents;
 
+        /*
+        * Multi points, polyline or polygon.
+        */
         var PointString = (function () {
             function PointString(pts) {
                 this.points = pts;
             }
             PointString.prototype.get = function (i) {
                 return this.points[i];
+            };
+
+            PointString.prototype.extents = function () {
+                var e = Extents.empty();
+                this.points.forEach(function (p) {
+                    e = e.addPoint(p);
+                });
+                return e;
+            };
+
+            PointString.prototype.length = function () {
+                var len = 0, i;
+                for (i = 0; i < this.points.length - 1; i++) {
+                    len += this.points[i].dist(this.points[i + 1]);
+                }
+                return len;
+            };
+
+            PointString.prototype.area = function () {
+                return Math.abs(this.algebraicArea());
+            };
+
+            PointString.prototype.algebraicArea = function () {
+                var a = 0, i, j;
+                for (i = 0; i < this.points.length; i++) {
+                    j = (i < this.points.length - 1) ? (i + 1) : 0;
+                    a += 0.5 * this.points[i].kross(this.points[j]);
+                }
+                return a;
+            };
+
+            PointString.prototype.average = function () {
+                return this.points.reduce(function (x, y) {
+                    return x.add(y);
+                }).div(this.points.length);
+            };
+
+            PointString.prototype.centroid = function () {
+                var a = 0, a1 = 0, c = Vector.zero(), i, j;
+                if (this.points.length === 1) {
+                    return this.points[0].copy();
+                }
+                for (i = 0; i < this.points.length; i++) {
+                    j = (i < this.points.length - 1) ? (i + 1) : 0;
+                    a1 = 0.5 * this.points[i].kross(this.points[j]);
+                    a += a1;
+                    c = c.add(this.points[i].add(this.points[j]).div(3).mult(a1));
+                }
+                return c.div(a);
+            };
+
+            PointString.prototype.lerp = function (param) {
+                var i = Math.floor(param), p1 = this.points[i], p2 = this.points[i + 1];
+                if (!p2) {
+                    return p1.copy();
+                }
+                return p1.lerp(p2, param - 1);
+            };
+
+            PointString.prototype.isPointIn = function () {
+                var a = 0, i, j;
+                for (i = 0; i < this.points.length; i++) {
+                    j = (i < this.points.length - 1) ? (i + 1) : 0;
+                    a += this.points[i].angleTo(this.points[j], "-PiToPi");
+                }
+                return Math.abs(a - 2 * Math.PI) < 0.1;
             };
             return PointString;
         })();
