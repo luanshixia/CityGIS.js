@@ -29,27 +29,18 @@ var dreambuild;
 
         var Vector = (function () {
             function Vector(x, y, z) {
-                if (arguments.length < 3) {
-                    z = 0;
-                    if (arguments.length < 2) {
-                        y = 0;
-                        if (arguments.length < 1) {
-                            x = 0;
-                        }
-                    }
-                }
-                this.set(x, y, z);
-            }
-            Vector.prototype.set = function (x, y, z) {
-                if (arguments.length < 3) {
-                    z = 0;
-                }
+                if (typeof x === "undefined") { x = 0; }
+                if (typeof y === "undefined") { y = 0; }
+                if (typeof z === "undefined") { z = 0; }
                 this.x = x;
                 this.y = y;
                 this.z = z;
+            }
+            Vector.prototype.get = function (dimension) {
+                return this.array()[dimension];
             };
 
-            Vector.prototype.get = function () {
+            Vector.prototype.copy = function () {
                 return new Vector(this.x, this.y, this.z);
             };
 
@@ -95,7 +86,7 @@ var dreambuild;
             };
 
             Vector.prototype.limit = function (max) {
-                return this.mag() > max ? this.setMag(max) : this.get();
+                return this.mag() > max ? this.setMag(max) : this.copy();
             };
 
             Vector.prototype.setMag = function (len) {
@@ -142,8 +133,7 @@ var dreambuild;
             };
 
             Vector.fromAngle = function (angle) {
-                var xUnit = new Vector(1, 0);
-                return xUnit.rotate(angle);
+                return Vector.xAxis().rotate(angle);
             };
 
             Vector.angleBetween = function (v1, v2) {
@@ -168,6 +158,97 @@ var dreambuild;
             return Vector;
         })();
         geometry.Vector = Vector;
+
+        var Extents = (function () {
+            function Extents(min, max) {
+                if (typeof max === "undefined") { max = min; }
+                this.min = min.copy();
+                this.max = max.copy();
+            }
+            Extents.prototype.copy = function () {
+                return new Extents(this.min, this.max);
+            };
+
+            Extents.prototype.add = function (e) {
+                if (this.isEmpty()) {
+                    return e.copy();
+                } else if (e.isEmpty()) {
+                    return this.copy();
+                }
+                return Extents.create(Math.min(this.min.x, e.min.x), Math.max(this.max.x, e.max.x), Math.min(this.min.y, e.min.y), Math.max(this.max.y, e.max.y), Math.min(this.min.z, e.min.z), Math.max(this.max.z, e.max.z));
+            };
+
+            Extents.prototype.addPoint = function (p) {
+                if (this.isEmpty()) {
+                    return new Extents(p, p);
+                }
+                return Extents.create(Math.min(this.min.x, p.x), Math.max(this.max.x, p.x), Math.min(this.min.y, p.y), Math.max(this.max.y, p.y), Math.min(this.min.z, p.z), Math.max(this.max.z, p.z));
+            };
+
+            Extents.prototype.extend = function (factor) {
+                var center = this.center();
+                return new Extents(center.add(this.min.sub(center).mult(factor)), center.add(this.max.sub(center).mult(factor)));
+            };
+
+            Extents.prototype.range = function (dimension) {
+                return this.max.sub(this.min).get(dimension);
+            };
+
+            Extents.prototype.area = function () {
+                return this.range(0) * this.range(1);
+            };
+
+            Extents.prototype.volumn = function () {
+                return this.range(0) * this.range(1) * this.range(2);
+            };
+
+            Extents.prototype.center = function () {
+                return this.min.add(this.max).mult(0.5);
+            };
+
+            Extents.prototype.isEmpty = function () {
+                return !this.min;
+            };
+
+            Extents.prototype.isPointIn = function (p) {
+                return p.x >= this.min.x && p.x <= this.max.x && p.y >= this.min.y && p.y <= this.max.y && p.z >= this.min.z && p.z <= this.max.z;
+            };
+
+            Extents.prototype.isIn = function (e) {
+                return this.min.x >= e.min.x && this.max.x <= e.max.x && this.min.y >= e.min.y && this.max.y <= e.max.y && this.min.z >= e.min.z && this.max.z <= e.max.z;
+            };
+
+            Extents.prototype.isCross = function (e) {
+                var _this = this;
+                var union = this.add(e);
+                return [0, 1, 2].every(function (i) {
+                    return union.range(i) <= _this.range(i) + e.range(i);
+                });
+            };
+
+            Extents.create = function (minx, maxx, miny, maxy, minz, maxz) {
+                if (typeof minz === "undefined") { minz = 0; }
+                if (typeof maxz === "undefined") { maxz = 0; }
+                return new Extents(new Vector(minx, miny, minz), new Vector(maxx, maxy, maxz));
+            };
+
+            Extents.empty = function () {
+                return new Extents();
+            };
+            return Extents;
+        })();
+        geometry.Extents = Extents;
+
+        var PointString = (function () {
+            function PointString(pts) {
+                this.points = pts;
+            }
+            PointString.prototype.get = function (i) {
+                return this.points[i];
+            };
+            return PointString;
+        })();
+        geometry.PointString = PointString;
     })(dreambuild.geometry || (dreambuild.geometry = {}));
     var geometry = dreambuild.geometry;
 })(dreambuild || (dreambuild = {}));

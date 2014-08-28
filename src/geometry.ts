@@ -28,29 +28,17 @@ module dreambuild.geometry {
         y: number;
         z: number;
 
-        constructor(x?: number, y?: number, z?: number) {
-            if (arguments.length < 3) {
-                z = 0;
-                if (arguments.length < 2) {
-                    y = 0;
-                    if (arguments.length < 1) {
-                        x = 0;
-                    }
-                }
-            }
-            this.set(x, y, z);
-        }
-
-        set(x: number, y: number, z?: number) {
-            if (arguments.length < 3) {
-                z = 0;
-            }
+        constructor(x = 0, y = 0, z = 0) {
             this.x = x;
             this.y = y;
             this.z = z;
         }
 
-        get() {
+        get(dimension: number) {
+            return this.array()[dimension];
+        }
+
+        copy() {
             return new Vector(this.x, this.y, this.z);
         }
 
@@ -98,7 +86,7 @@ module dreambuild.geometry {
         }
 
         limit(max: number) {
-            return this.mag() > max ? this.setMag(max) : this.get();
+            return this.mag() > max ? this.setMag(max) : this.copy();
         }
 
         setMag(len: number) {
@@ -151,8 +139,7 @@ module dreambuild.geometry {
         }
 
         static fromAngle(angle: number) {
-            var xUnit = new Vector(1, 0);
-            return xUnit.rotate(angle);
+            return Vector.xAxis().rotate(angle);
         }
 
         static angleBetween(v1: Vector, v2: Vector) {
@@ -173,6 +160,108 @@ module dreambuild.geometry {
 
         static zAxis() {
             return new Vector(0, 0, 1);
+        }
+    }
+
+    export class Extents {
+
+        min: Vector;
+        max: Vector;
+
+        constructor(min?: Vector, max = min) {
+            this.min = min.copy();
+            this.max = max.copy();
+        }
+
+        copy() {
+            return new Extents(this.min, this.max);
+        }
+
+        add(e: Extents) {
+            if (this.isEmpty()) {
+                return e.copy();
+            } else if (e.isEmpty()) {
+                return this.copy();
+            }
+            return Extents.create(
+                Math.min(this.min.x, e.min.x), Math.max(this.max.x, e.max.x),
+                Math.min(this.min.y, e.min.y), Math.max(this.max.y, e.max.y),
+                Math.min(this.min.z, e.min.z), Math.max(this.max.z, e.max.z));
+        }
+
+        addPoint(p: Vector) {
+            if (this.isEmpty()) {
+                return new Extents(p, p);
+            }
+            return Extents.create(
+                Math.min(this.min.x, p.x), Math.max(this.max.x, p.x),
+                Math.min(this.min.y, p.y), Math.max(this.max.y, p.y),
+                Math.min(this.min.z, p.z), Math.max(this.max.z, p.z));
+        }
+
+        extend(factor: number) {
+            var center = this.center();
+            return new Extents(center.add(this.min.sub(center).mult(factor)), center.add(this.max.sub(center).mult(factor)));
+        }
+
+        range(dimension: number) {
+            return this.max.sub(this.min).get(dimension);
+        }
+
+        area() {
+            return this.range(0) * this.range(1);
+        }
+
+        volumn() {
+            return this.range(0) * this.range(1) * this.range(2);
+        }
+
+        center() {
+            return this.min.add(this.max).mult(0.5);
+        }
+
+        isEmpty() {
+            return !this.min;
+        }
+
+        isPointIn(p: Vector) {
+            return p.x >= this.min.x && p.x <= this.max.x
+                && p.y >= this.min.y && p.y <= this.max.y
+                && p.z >= this.min.z && p.z <= this.max.z;
+        }
+
+        isIn(e: Extents) {
+            return this.min.x >= e.min.x && this.max.x <= e.max.x
+                && this.min.y >= e.min.y && this.max.y <= e.max.y
+                && this.min.z >= e.min.z && this.max.z <= e.max.z;
+        }
+
+        isCross(e: Extents) {
+            var union = this.add(e);
+            return [0, 1, 2].every(i => {
+                return union.range(i) <= this.range(i) + e.range(i);
+            });
+        }
+
+        static create(minx: number, maxx: number, miny: number, maxy: number, minz = 0, maxz = 0) {
+            return new Extents(new Vector(minx, miny, minz), new Vector(maxx, maxy, maxz));
+        }
+
+        static empty() {
+            return new Extents();
+        }
+    }
+
+    export class PointString {
+
+        points: Vector[];
+
+        constructor(pts: Vector[]) {
+            this.points = pts;
+        }
+
+        get(i: number) {
+            return this.points[i];
         }
     }
 }
