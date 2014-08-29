@@ -1,14 +1,16 @@
 /// <reference path="qunit.d.ts" />
 /// <reference path="../src/geometry.ts" />
-/**
-* CityGIS.test.js
-*
-* by WANG Yang
-*
-*/
-var geo = dreambuild.geometry;
 
-function floatEqual(actual, expected, message) {
+/**
+ * CityGIS.test.js
+ * 
+ * by WANG Yang
+ * 
+ */
+
+import geo = dreambuild.geometry;
+
+function floatEqual(actual: number, expected: number, message: string) {
     return ok(Math.abs(actual - expected) < 0.001, message);
 }
 
@@ -21,14 +23,18 @@ test("Hello", function () {
 QUnit.module("CityGIS.test.geometry");
 
 test("Utils", function () {
-    var min = 2010, max = 2015, rand = geo.Utils.random(2010, 2015);
+    var min = 2010, max = 2015,
+        rand = geo.Utils.random(2010, 2015);
 
     ok(geo.Utils.formatString("{0} {1}, {2}", "Aug.", "29th", 2014) === "Aug. 29th, 2014", "formatString() works fine!");
     ok(rand >= min && rand <= max, geo.Utils.formatString("{0} <= {1} <= {2}", min, rand, max));
 });
 
 test("Vector", function () {
-    var v = new geo.Vector(2, 1), e = geo.Vector.xAxis(), piOver2 = Math.PI * 0.5, piOver4 = Math.PI * 0.25;
+    var v = new geo.Vector(2, 1),
+        e = geo.Vector.xAxis(),
+        piOver2 = Math.PI * 0.5,
+        piOver4 = Math.PI * 0.25;
 
     ok(v.toString() === "2,1,0", "v is vector (2, 1)");
     ok(v.magSq() === v.kross(v.rotate(piOver2)), "v.magSq() === v.kross(v.rotate(piOver2))");

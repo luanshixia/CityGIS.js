@@ -46,6 +46,13 @@ var dreambuild;
                 return this.array()[dimension];
             };
 
+            Vector.prototype.equals = function (v) {
+                var _this = this;
+                return [0, 1, 2].every(function (i) {
+                    return _this.get(i) === v.get(i);
+                });
+            };
+
             Vector.prototype.copy = function () {
                 return new Vector(this.x, this.y, this.z);
             };
@@ -128,7 +135,7 @@ var dreambuild;
 
             Vector.prototype.rotate = function (theta) {
                 // this is 2D only.
-                var x = this.x * Math.cos(theta) + this.y * Math.sin(theta), y = -this.x * Math.sin(theta) + this.y * Math.cos(theta), z = this.z;
+                var x = this.x * Math.cos(theta) - this.y * Math.sin(theta), y = this.x * Math.sin(theta) + this.y * Math.cos(theta), z = this.z;
                 return new Vector(x, y, z);
             };
 
@@ -194,11 +201,15 @@ var dreambuild;
         var Extents = (function () {
             function Extents(min, max) {
                 if (typeof max === "undefined") { max = min; }
-                this.min = min.copy();
-                this.max = max.copy();
+                this.min = min ? min.copy() : min;
+                this.max = max ? max.copy() : max;
             }
             Extents.prototype.copy = function () {
                 return new Extents(this.min, this.max);
+            };
+
+            Extents.prototype.equals = function (e) {
+                return this.min.equals(e.min) && this.max.equals(e.max);
             };
 
             Extents.prototype.add = function (e) {
@@ -339,11 +350,11 @@ var dreambuild;
                 return p1.lerp(p2, param - 1);
             };
 
-            PointString.prototype.isPointIn = function () {
+            PointString.prototype.isPointIn = function (p) {
                 var a = 0, i, j;
                 for (i = 0; i < this.points.length; i++) {
                     j = (i < this.points.length - 1) ? (i + 1) : 0;
-                    a += this.points[i].angleTo(this.points[j], "-PiToPi");
+                    a += this.points[i].sub(p).angleTo(this.points[j].sub(p), "-PiToPi");
                 }
                 return Math.abs(a - 2 * Math.PI) < 0.1;
             };
