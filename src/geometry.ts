@@ -158,7 +158,7 @@ module dreambuild.geometry {
             return Utils.formatString("{0},{1},{2}", this.x, this.y, this.z);
         }
 
-        static fromString(str: string) {
+        static parse(str: string) {
             var ns = str.split(",").map(s => parseFloat(s));
             return new Vector(ns[0], ns[1], ns[2]);
         }
@@ -297,6 +297,12 @@ module dreambuild.geometry {
         static empty() {
             return new Extents();
         }
+
+        static fromPoints(pts: Vector[]) {
+            var min = new Vector(pts.map(p => p.x).reduce((a, b) => Math.min(a, b)), pts.map(p => p.y).reduce((a, b) => Math.min(a, b)));
+            var max = new Vector(pts.map(p => p.x).reduce((a, b) => Math.max(a, b)), pts.map(p => p.y).reduce((a, b) => Math.max(a, b)));
+            return new Extents(min, max);
+        }
     }
 
     /*
@@ -388,6 +394,14 @@ module dreambuild.geometry {
                 a += this.points[i].sub(p).angleTo(this.points[j].sub(p), "-PiToPi");
             }
             return Math.abs(a - 2 * Math.PI) < 0.1;
+        }
+
+        toString() {
+            return this.points.map(p => p.toString()).join("|");
+        }
+
+        static parse(str: string) {
+            return new PointString(str.split("|").map(s => Vector.parse(s)));
         }
     }
 }

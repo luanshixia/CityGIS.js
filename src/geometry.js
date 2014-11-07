@@ -157,7 +157,7 @@ var dreambuild;
                 return Utils.formatString("{0},{1},{2}", this.x, this.y, this.z);
             };
 
-            Vector.fromString = function (str) {
+            Vector.parse = function (str) {
                 var ns = str.split(",").map(function (s) {
                     return parseFloat(s);
                 });
@@ -287,6 +287,28 @@ var dreambuild;
             Extents.empty = function () {
                 return new Extents();
             };
+
+            Extents.fromPoints = function (pts) {
+                var min = new Vector(pts.map(function (p) {
+                    return p.x;
+                }).reduce(function (a, b) {
+                    return Math.min(a, b);
+                }), pts.map(function (p) {
+                    return p.y;
+                }).reduce(function (a, b) {
+                    return Math.min(a, b);
+                }));
+                var max = new Vector(pts.map(function (p) {
+                    return p.x;
+                }).reduce(function (a, b) {
+                    return Math.max(a, b);
+                }), pts.map(function (p) {
+                    return p.y;
+                }).reduce(function (a, b) {
+                    return Math.max(a, b);
+                }));
+                return new Extents(min, max);
+            };
             return Extents;
         })();
         geometry.Extents = Extents;
@@ -374,6 +396,18 @@ var dreambuild;
                     a += this.points[i].sub(p).angleTo(this.points[j].sub(p), "-PiToPi");
                 }
                 return Math.abs(a - 2 * Math.PI) < 0.1;
+            };
+
+            PointString.prototype.toString = function () {
+                return this.points.map(function (p) {
+                    return p.toString();
+                }).join("|");
+            };
+
+            PointString.parse = function (str) {
+                return new PointString(str.split("|").map(function (s) {
+                    return Vector.parse(s);
+                }));
             };
             return PointString;
         })();
