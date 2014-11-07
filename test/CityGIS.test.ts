@@ -40,7 +40,7 @@ test("Vector", function () {
     ok(v.magSq() === v.kross(v.rotate(piOver2)), "v.magSq() === v.kross(v.rotate(piOver2))");
     ok(v.mag().toFixed(3) === "2.236", "v.mag() === 2.236");
     floatEqual(v.normalize().mag(), 1, "v.normalize().mag() === 1");
-    ok(v.rotate(-piOver2).dot(v) === 0, "v.rotate(-piOver2).dot(v) === 0");
+    floatEqual(v.rotate(-piOver2).dot(v), 0, "v.rotate(-piOver2).dot(v) === 0");
     ok(v.cross(v).mag() === 0, "v.cross(v).mag() === 0");
     ok(geo.Vector.fromAngle(piOver4).heading() === piOver4, "geo.Vector.fromAngle(piOver4).heading() === piOver4");
     ok(v.setMag(5).mag() === 5, "v.setMag(5).mag() === 5");
@@ -71,7 +71,7 @@ test("PointString", function () {
     ok(poly.length() === 2, "poly.length() === 2");
     ok(poly.area() === 0.5, "poly.area() === 0.5");
     ok(poly.average().equals(new geo.Vector(2 / 3, 1 / 3)), "poly.average().equals(new geo.Vector(2 / 3, 1 / 3))");
-    ok(poly.centroid().equals(poly.average()), "poly.average().equals(poly.average())");
+    ok(poly.centroid().equals(poly.average()), "poly.centroid().equals(poly.average())");
     ok(poly.lerp(1.5).equals(new geo.Vector(1, 0.5)), "poly.lerp(1.5).equals(new geo.Vector(1, 0.5))");
     ok(poly.isPointIn(poly.centroid()), "poly.isPointIn(poly.centroid())");
     ok(!poly.isPointIn(geo.Vector.yAxis()), "!poly.isPointIn(geo.Vector.yAxis())");

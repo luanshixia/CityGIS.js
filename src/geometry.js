@@ -26,6 +26,11 @@ var dreambuild;
                     return typeof args[index] !== 'undefined' ? args[index] : match;
                 });
             };
+
+            Utils.floatEquals = function (a, b) {
+                return Math.abs(a - b) < Utils.epsilon;
+            };
+            Utils.epsilon = 0.000001;
             return Utils;
         })();
         geometry.Utils = Utils;
@@ -49,7 +54,7 @@ var dreambuild;
             Vector.prototype.equals = function (v) {
                 var _this = this;
                 return [0, 1, 2].every(function (i) {
-                    return _this.get(i) === v.get(i);
+                    return Utils.floatEquals(_this.get(i), v.get(i));
                 });
             };
 
@@ -116,21 +121,22 @@ var dreambuild;
 
             Vector.prototype.angleTo = function (v, mode) {
                 if (typeof mode === "undefined") { mode = "0ToPi"; }
+                if (mode === "0ToPi") {
+                    return Vector.angleBetween(this, v);
+                }
                 var dir0 = this.heading(), dir1 = v.heading(), angle = dir1 - dir0;
                 if (mode === "0To2Pi") {
                     if (angle < 0) {
                         angle += 2 * Math.PI;
                     }
-                    return angle;
                 } else if (mode === "-PiToPi") {
                     if (angle < -Math.PI) {
                         angle += 2 * Math.PI;
                     } else if (angle > Math.PI) {
                         angle -= 2 * Math.PI;
                     }
-                    return angle;
                 }
-                return Vector.angleBetween(this, v);
+                return angle;
             };
 
             Vector.prototype.rotate = function (theta) {
@@ -209,6 +215,9 @@ var dreambuild;
             };
 
             Extents.prototype.equals = function (e) {
+                if (this.isEmpty() || e.isEmpty()) {
+                    return this.isEmpty() && e.isEmpty();
+                }
                 return this.min.equals(e.min) && this.max.equals(e.max);
             };
 
@@ -241,7 +250,7 @@ var dreambuild;
                 return this.range(0) * this.range(1);
             };
 
-            Extents.prototype.volumn = function () {
+            Extents.prototype.volume = function () {
                 return this.range(0) * this.range(1) * this.range(2);
             };
 
@@ -347,7 +356,15 @@ var dreambuild;
                 if (!p2) {
                     return p1.copy();
                 }
-                return p1.lerp(p2, param - 1);
+                return p1.lerp(p2, param - i);
+            };
+
+            PointString.prototype.dir = function (param) {
+                var i = Math.floor(param), p1 = this.points[i], p2 = this.points[i + 1];
+                if (!p2) {
+                    return p1.sub(this.points[i - 1]).normalize();
+                }
+                return p2.sub(p1).normalize();
             };
 
             PointString.prototype.isPointIn = function (p) {

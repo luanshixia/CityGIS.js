@@ -11,6 +11,8 @@ module dreambuild.geometry {
      */
     export class Utils {
 
+        static epsilon = 0.000001;
+
         static random(min: number, max: number) {
             var rand = Math.random();
             return min + rand * (max - min);
@@ -22,6 +24,10 @@ module dreambuild.geometry {
                     ? args[index]
                     : match;
             });
+        }
+
+        static floatEquals(a: number, b: number) {
+            return Math.abs(a - b) < Utils.epsilon;
         }
     }
 
@@ -45,7 +51,7 @@ module dreambuild.geometry {
         }
 
         equals(v: Vector) {
-            return [0, 1, 2].every(i => this.get(i) === v.get(i));
+            return [0, 1, 2].every(i => Utils.floatEquals(this.get(i), v.get(i)));
         }
 
         copy() {
@@ -112,6 +118,9 @@ module dreambuild.geometry {
         }
 
         angleTo(v: Vector, mode = "0ToPi") {
+            if (mode === "0ToPi") {
+                return Vector.angleBetween(this, v);
+            }
             var dir0 = this.heading(),
                 dir1 = v.heading(),
                 angle = dir1 - dir0;
@@ -119,16 +128,14 @@ module dreambuild.geometry {
                 if (angle < 0) {
                     angle += 2 * Math.PI;
                 }
-                return angle;
             } else if (mode === "-PiToPi") {
                 if (angle < -Math.PI) {
                     angle += 2 * Math.PI;
                 } else if (angle > Math.PI) {
                     angle -= 2 * Math.PI;
                 }
-                return angle;
             }
-            return Vector.angleBetween(this, v);
+            return angle;
         }
 
         rotate(theta: number) {
@@ -213,6 +220,9 @@ module dreambuild.geometry {
         }
 
         equals(e: Extents) {
+            if (this.isEmpty() || e.isEmpty()) {
+                return this.isEmpty() && e.isEmpty();
+            }
             return this.min.equals(e.min) && this.max.equals(e.max);
         }
 
@@ -251,7 +261,7 @@ module dreambuild.geometry {
             return this.range(0) * this.range(1);
         }
 
-        volumn() {
+        volume() {
             return this.range(0) * this.range(1) * this.range(2);
         }
 
@@ -358,7 +368,17 @@ module dreambuild.geometry {
             if (!p2) {
                 return p1.copy();
             }
-            return p1.lerp(p2, param - 1);
+            return p1.lerp(p2, param - i);
+        }
+
+        dir(param: number) {
+            var i = Math.floor(param),
+                p1 = this.points[i],
+                p2 = this.points[i + 1];
+            if (!p2) {
+                return p1.sub(this.points[i - 1]).normalize();
+            }
+            return p2.sub(p1).normalize();
         }
 
         isPointIn(p: Vector) {
