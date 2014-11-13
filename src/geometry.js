@@ -325,11 +325,7 @@ var dreambuild;
             };
 
             PointString.prototype.extents = function () {
-                var e = Extents.empty();
-                this.points.forEach(function (p) {
-                    e = e.addPoint(p);
-                });
-                return e;
+                return Extents.fromPoints(this.points);
             };
 
             PointString.prototype.length = function () {
@@ -395,7 +391,7 @@ var dreambuild;
                     j = (i < this.points.length - 1) ? (i + 1) : 0;
                     a += this.points[i].sub(p).angleTo(this.points[j].sub(p), "-PiToPi");
                 }
-                return Math.abs(a - 2 * Math.PI) < 0.1;
+                return Math.abs(Math.abs(a) - 2 * Math.PI) < 0.1;
             };
 
             PointString.prototype.toString = function () {

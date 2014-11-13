@@ -321,11 +321,7 @@ module dreambuild.geometry {
         }
 
         extents() {
-            var e = Extents.empty();
-            this.points.forEach(p => {
-                e = e.addPoint(p);
-            });
-            return e;
+            return Extents.fromPoints(this.points);
         }
 
         length() {
@@ -393,7 +389,7 @@ module dreambuild.geometry {
                 j = (i < this.points.length - 1) ? (i + 1) : 0;
                 a += this.points[i].sub(p).angleTo(this.points[j].sub(p), "-PiToPi");
             }
-            return Math.abs(a - 2 * Math.PI) < 0.1;
+            return Math.abs(Math.abs(a) - 2 * Math.PI) < 0.1;
         }
 
         toString() {
